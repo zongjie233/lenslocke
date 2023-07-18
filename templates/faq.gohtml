@@ -1,1 +1,14 @@
+{{template "header" .}}
 <h1>welcome to my faq page!</h1>
+<ul>
+    {{range .}}
+        {{template "qa" .}}
+    {{end}}
+</ul>
+{{template "footer" .}}
+
+
+{{define "qa"}}
+<li><b>{{.Question}}</b>{{.Answer}}</li>
+{{end}}
+

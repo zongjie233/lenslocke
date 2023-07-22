@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// 确保模板解析导致错误时产生panic而不是错误，更好的进行错误检查
 func Must(t Template, err error) Template {
 	if err != nil {
 		panic(err)
@@ -36,6 +37,7 @@ func Parse(filepath string) (Template, error) {
 	}, nil
 }
 
+// 已经解析的Gohtml模板
 type Template struct {
 	htmlTpl *template.Template
 }

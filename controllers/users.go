@@ -3,19 +3,21 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-
-	"github.com/zongjie233/lenslocked/views"
 )
 
 // 保存用户部分中使用的模板
 type Users struct {
 	Templates struct {
-		New views.Template
+		New Template
 	}
 }
 
 func (u Users) New(w http.ResponseWriter, r *http.Request) {
-	u.Templates.New.Execute(w, nil)
+	var data struct {
+		Email string
+	}
+	data.Email = r.FormValue("email")
+	u.Templates.New.Execute(w, data)
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {

@@ -1,37 +1,38 @@
 package main
 
 import (
-	"os"
-	"text/template"
+	"database/sql"
+	"fmt"
+
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-type User struct {
-	Name string
-	Age  int
-	Meta UserMeta
+type PostgresConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Database string
+	SSLMode  string
 }
 
-type UserMeta struct {
-	Visits int
+func (cfg PostgresConfig) String() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
 }
 
 func main() {
-	t, err := template.ParseFiles("hello.gohtml")
+
+	db, err := sql.Open("pgx", "host=localhost port=5432 user=postgres password=990321 dbname=lenslocked sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
 
-	user := User{
-		Name: "zdq",
-		Age:  14,
-		Meta: UserMeta{
-			Visits: 4,
-		},
-	}
-
-	err = t.Execute(os.Stdout, user)
+	defer db.Close()
+	err = db.Ping()
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println("connected!")
 
 }

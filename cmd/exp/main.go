@@ -21,8 +21,15 @@ func (cfg PostgresConfig) String() string {
 }
 
 func main() {
-
-	db, err := sql.Open("pgx", "host=localhost port=5432 user=postgres password=990321 dbname=lenslocked sslmode=disable")
+	cfg := PostgresConfig{
+		Host:     "localhost",
+		Port:     "5432",
+		User:     "postgres",
+		Password: "990321",
+		Database: "lenslocked",
+		SSLMode:  "disable",
+	}
+	db, err := sql.Open("pgx", cfg.String())
 	if err != nil {
 		panic(err)
 	}

@@ -42,7 +42,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/user/me", http.StatusFound)
+	http.Redirect(w, r, "/users/me", http.StatusFound)
 	fmt.Fprintf(w, "User created:%v", user)
 }
 

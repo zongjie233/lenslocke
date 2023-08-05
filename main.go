@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gorilla/csrf"
+	"github.com/zongjie233/lenslocked/migrations"
 	"github.com/zongjie233/lenslocked/models"
 	"net/http"
 
@@ -32,6 +33,12 @@ func main() {
 	}
 
 	defer db.Close()
+
+	// 执行迁移
+	err = models.MigrateFS(db, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
 
 	userService := models.UserService{
 		DB: db,

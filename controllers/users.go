@@ -122,3 +122,43 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/signin", http.StatusFound)
 
 }
+
+type UserMiddleware struct {
+	SessionService *models.SessionService
+}
+
+// SetUser 处理HTTP请求时从会话中获取用户信息，并将用户信息存储到请求的上下文中
+func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 读取会话cookie,并获取用户信息
+		token, err := readCookie(r, CookieSession)
+		// 如果失败则继续处理下一个处理器
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		user, err := umw.SessionService.User(token)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithUser(ctx, user)
+		// 将用户信息存储到请求的上下文中。
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// RequireUser 用于在处理HTTP请求时检查用户是否已登录。如果用户未登录，它将重定向到登录页面，否则它会继续执行下一个处理器函数。
+func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := context.User(r.Context())
+		if user == nil {
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}

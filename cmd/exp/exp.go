@@ -9,9 +9,9 @@ import (
 
 type ctxKey string
 
-const (
-	favoriteColorKey ctxKey = "favorite-color"
-)
+//const (
+//	favoriteColorKey ctxKey = "favorite-color"
+//)
 
 func main() {
 	ctx := stdctx.Background()
@@ -23,4 +23,7 @@ func main() {
 
 	retrievedUser := context.User(ctx)
 	fmt.Println(retrievedUser.Email)
+
+	fmt.Println(retrievedUser.Email)
+
 }

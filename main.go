@@ -2,29 +2,20 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
 	"github.com/zongjie233/lenslocked/migrations"
 	"github.com/zongjie233/lenslocked/models"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	_ "github.com/go-chi/chi/v5"
 	"github.com/zongjie233/lenslocked/controllers"
 	"github.com/zongjie233/lenslocked/templates"
 	"github.com/zongjie233/lenslocked/views"
 )
 
 func main() {
-	r := chi.NewRouter()
-
-	r.Get("/", controllers.StaticHandler(
-		views.Must(views.ParseFS(templates.FS, "home.gohtml", "tailwind.gohtml"))))
-
-	r.Get("/contact", controllers.StaticHandler(
-		views.Must(views.ParseFS(templates.FS, "contact.gohtml", "tailwind.gohtml"))))
-
-	r.Get("/faq", controllers.FAQ(
-		views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))))
-
+	// 设置数据库
 	cfg := models.DefaultPostgresConfig()
 	fmt.Println(cfg)
 	db, err := models.Open(cfg)
@@ -40,6 +31,7 @@ func main() {
 		panic(err)
 	}
 
+	// 设置服务项
 	userService := models.UserService{
 		DB: db,
 	}
@@ -48,7 +40,14 @@ func main() {
 		DB: db,
 	}
 
-	fmt.Println("connected!")
+	// 设置中间件
+	umw := controllers.UserMiddleware{SessionService: &sessionService}
+	csrfKey := "abcdefghigklmnopqrstuvwxyzsfhsdf"
+	csrfMw := csrf.Protect([]byte(csrfKey),
+		//TODO: 生产环境下改成true
+		csrf.Secure(false))
+
+	//设置控制器
 	usersC := controllers.Users{
 		UserService:    &userService, // 传入指针
 		SessionService: &sessionService,
@@ -62,20 +61,35 @@ func main() {
 		"signin.gohtml", "tailwind.gohtml",
 	))
 
+	// 设置路由器和路由
+	r := chi.NewRouter()
+	r.Use(csrfMw)
+	r.Use(umw.SetUser)
+	r.Get("/", controllers.StaticHandler(
+		views.Must(views.ParseFS(templates.FS, "home.gohtml", "tailwind.gohtml"))))
+
+	r.Get("/contact", controllers.StaticHandler(
+		views.Must(views.ParseFS(templates.FS, "contact.gohtml", "tailwind.gohtml"))))
+
+	r.Get("/faq", controllers.FAQ(
+		views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))))
+
+	fmt.Println("connected!")
+
 	r.Get("/signup", usersC.New)
 	r.Post("/users", usersC.Create)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
 	r.Post("/signout", usersC.ProcessSignOut)
-	r.Get("/users/me", usersC.CurrentUser)
+	r.Route("/users/me", func(r chi.Router) {
+		r.Get("/", usersC.CurrentUser)
+	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "page not found", http.StatusNotFound)
 	})
+
+	// 启动服务
 	fmt.Println("starting the server on :3000....")
-	csrfKey := "abcdefghigklmnopqrstuvwxyzsfhsdf"
-	csrfMw := csrf.Protect([]byte(csrfKey),
-		//TODO: 生产环境下改成true
-		csrf.Secure(false))
-	http.ListenAndServe(":3000", csrfMw(r))
+	http.ListenAndServe(":3000", r)
 }

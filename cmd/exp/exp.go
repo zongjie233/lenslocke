@@ -1,29 +1,40 @@
 package main
 
 import (
-	stdctx "context"
 	"fmt"
-	"github.com/zongjie233/lenslocked/context"
-	"github.com/zongjie233/lenslocked/models"
+	"github.com/go-mail/mail/v2"
+	"os"
 )
 
-type ctxKey string
-
-//const (
-//	favoriteColorKey ctxKey = "favorite-color"
-//)
+const (
+	host     = "sandbox.smtp.mailtrap.io"
+	port     = 587
+	username = "3fad533d5a9170"
+	password = "7d15beee31aae1"
+)
 
 func main() {
-	ctx := stdctx.Background()
+	from := "test@test.com"
+	to := "hszdq0608@gmail.com"
+	subject := "this is test email"
+	plaintext := "This is the body of the email"
+	html := `<h1> Hello there !</h1><p>this is the email</p>`
 
-	user := models.User{
-		Email: "123@123.com",
+	msg := mail.NewMessage()
+	msg.SetHeader("To", to)
+	msg.SetHeader("From", from)
+	msg.SetHeader("Subject", subject)
+
+	msg.SetBody("text/plain", plaintext)
+
+	msg.AddAlternative("text/html", html)
+	msg.WriteTo(os.Stdout)
+
+	dialer := mail.NewDialer(host, port, username, password)
+	err := dialer.DialAndSend(msg)
+	if err != nil {
+		panic(err)
 	}
-	ctx = context.WithUser(ctx, &user)
-
-	retrievedUser := context.User(ctx)
-	fmt.Println(retrievedUser.Email)
-
-	fmt.Println(retrievedUser.Email)
+	fmt.Println("message sent")
 
 }

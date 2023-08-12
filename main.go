@@ -82,6 +82,9 @@ func main() {
 	r.Post("/signin", usersC.ProcessSignIn)
 	r.Post("/signout", usersC.ProcessSignOut)
 	r.Route("/users/me", func(r chi.Router) {
+		// 使用中间件
+		r.Use(umw.RequireUser)
+
 		r.Get("/", usersC.CurrentUser)
 	})
 

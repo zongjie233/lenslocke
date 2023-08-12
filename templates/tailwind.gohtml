@@ -21,18 +21,18 @@
       </div>
       
       <div>
-{{/*        TODO: signout */}}
+        {{if currentUser}}
         <form action="/signout" method="post" class="inline pr-4">
           <div class="hidden">
             {{csrfField}}
           </div>
-
           <button type="submit">Sign out</button>
-
         </form>
+        {{else}}
       <a class="text-lg font-semibold pr-4" href="/signin" >Sign in</a>
       <a class="text-lg font-semibold px-4 py-2 bg-blue-800 hover:text-blue-00 rounded" href="/signup" >Sign up</a>
-      </div>
+        {{end}}
+  </div>
     </nav>
   </header>
   {{end}}

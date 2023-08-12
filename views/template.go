@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/gorilla/csrf"
+	"github.com/zongjie233/lenslocked/context"
+	"github.com/zongjie233/lenslocked/models"
 	"html/template"
 	"io"
 	"io/fs"
@@ -22,11 +24,14 @@ func Must(t Template, err error) Template {
 
 // ParseFS 返回一个 Template 包含已解析模板的结构
 func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
-	// 必须在解析模版之前声明,不然找不到csrffield
+	// 必须在解析模版之前声明
 	tpl := template.New(patterns[0])
 	tpl = tpl.Funcs(
 		template.FuncMap{
 			"csrfField": func() (template.HTML, error) {
+				return "", fmt.Errorf("功能还未完成")
+			},
+			"currentUser": func() (template.HTML, error) {
 				return "", fmt.Errorf("功能还未完成")
 			},
 		})
@@ -59,6 +64,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 		template.FuncMap{
 			"csrfField": func() template.HTML {
 				return csrf.TemplateField(r)
+			},
+			"currentUser": func() *models.User {
+				return context.User(r.Context())
 			},
 		},
 	)

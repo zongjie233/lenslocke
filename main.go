@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	_ "github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 	"github.com/zongjie233/lenslocked/migrations"
@@ -11,7 +12,6 @@ import (
 	"os"
 	"strconv"
 
-	_ "github.com/go-chi/chi/v5"
 	"github.com/zongjie233/lenslocked/controllers"
 	"github.com/zongjie233/lenslocked/templates"
 	"github.com/zongjie233/lenslocked/views"
@@ -153,7 +153,9 @@ func main() {
 	r.Post("/users", usersC.Create)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
+	r.Post("/signout", usersC.ProcessSignOut)
 	r.Get("/forgot-pw", usersC.ForgotPassword)
+	r.Post("/forgot-pw", usersC.ProcessForgotPassword)
 	r.Get("/reset-pw", usersC.ResetPassword)
 	r.Post("/reset-pw", usersC.ProcessResetPassword)
 	r.Route("/users/me", func(r chi.Router) {

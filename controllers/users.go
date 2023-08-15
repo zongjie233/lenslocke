@@ -111,11 +111,14 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 	token, err := readCookie(r, CookieSession)
 	if err != nil {
 		http.Redirect(w, r, "/signin", http.StatusFound)
+		fmt.Println("读取cookie出错了")
 		return
 	}
 
 	err = u.SessionService.Delete(token)
 	if err != nil {
+		fmt.Println("删除cookie出错了")
+
 		fmt.Println(err)
 		http.Error(w, "sth wrong", http.StatusInternalServerError)
 		return

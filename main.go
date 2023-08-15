@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
+	"github.com/joho/godotenv"
 	"github.com/zongjie233/lenslocked/migrations"
 	"github.com/zongjie233/lenslocked/models"
 	"net/http"
+	"os"
+	"strconv"
 
 	_ "github.com/go-chi/chi/v5"
 	"github.com/zongjie233/lenslocked/controllers"
@@ -14,11 +17,57 @@ import (
 	"github.com/zongjie233/lenslocked/views"
 )
 
+type config struct {
+	SMTP models.SMTPConfig
+	CSRF struct {
+		Key    string
+		Secure bool
+	}
+	PSQL   models.PostgresConfig
+	Server struct {
+		Address string
+	}
+}
+
+func loadEnvConfig() (config, error) {
+	var cfg config
+
+	// 从.env中加载配置
+	err := godotenv.Load()
+	if err != nil {
+		return cfg, err
+	}
+
+	// psql
+	cfg.PSQL = models.DefaultPostgresConfig()
+
+	// smtp
+	cfg.SMTP.Host = os.Getenv("SMTP_HOST")
+	portStr := os.Getenv("SMTP_PORT")
+	cfg.SMTP.Port, err = strconv.Atoi(portStr)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.SMTP.Username = os.Getenv("SMTP_USERNAME")
+	cfg.SMTP.Password = os.Getenv("SMTP_PASSWORD")
+
+	// csrf
+	cfg.CSRF.Key = "abcdefghigklmnopqrstuvwxyzsfhsdf"
+	cfg.CSRF.Secure = false
+
+	// Server
+	cfg.Server.Address = ":3000"
+	return cfg, err
+}
+
 func main() {
+	cfg, err := loadEnvConfig()
+	if err != nil {
+		panic(err)
+	}
+
 	// 设置数据库
-	cfg := models.DefaultPostgresConfig()
-	fmt.Println(cfg)
-	db, err := models.Open(cfg)
+	db, err := models.Open(cfg.PSQL)
 	if err != nil {
 		panic(err)
 	}
@@ -32,25 +81,36 @@ func main() {
 	}
 
 	// 设置服务项
-	userService := models.UserService{
+	userService := &models.UserService{
 		DB: db,
 	}
 
-	sessionService := models.SessionService{
+	sessionService := &models.SessionService{
 		DB: db,
 	}
+
+	pwResetService := &models.PasswordResetService{
+		DB: db,
+	}
+
+	emailService := models.NewEmailService(cfg.SMTP)
 
 	// 设置中间件
-	umw := controllers.UserMiddleware{SessionService: &sessionService}
-	csrfKey := "abcdefghigklmnopqrstuvwxyzsfhsdf"
-	csrfMw := csrf.Protect([]byte(csrfKey),
-		//TODO: 生产环境下改成true
-		csrf.Secure(false))
+	umw := controllers.UserMiddleware{
+		SessionService: sessionService,
+	}
+
+	csrfMw := csrf.Protect(
+		[]byte(cfg.CSRF.Key),
+		csrf.Secure(cfg.CSRF.Secure),
+	)
 
 	//设置控制器
 	usersC := controllers.Users{
-		UserService:    &userService, // 传入指针
-		SessionService: &sessionService,
+		UserService:          userService, // 传入指针
+		SessionService:       sessionService,
+		PasswordResetService: pwResetService,
+		EmailService:         emailService,
 	}
 	usersC.Templates.New = views.Must(views.ParseFS(
 		templates.FS,
@@ -59,6 +119,19 @@ func main() {
 	usersC.Templates.SignIn = views.Must(views.ParseFS(
 		templates.FS,
 		"signin.gohtml", "tailwind.gohtml",
+	))
+	usersC.Templates.ForgotPassword = views.Must(views.ParseFS(
+		templates.FS,
+		"forgot-pw.gohtml", "tailwind.gohtml",
+	))
+	usersC.Templates.CheckYourEmail = views.Must(views.ParseFS(
+		templates.FS,
+		"check-your-email.gohtml", "tailwind.gohtml",
+	))
+
+	usersC.Templates.ResetPassWord = views.Must(views.ParseFS(
+		templates.FS,
+		"reset-pw.gohtml", "tailwind.gohtml",
 	))
 
 	// 设置路由器和路由
@@ -80,7 +153,9 @@ func main() {
 	r.Post("/users", usersC.Create)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
-	r.Post("/signout", usersC.ProcessSignOut)
+	r.Get("/forgot-pw", usersC.ForgotPassword)
+	r.Get("/reset-pw", usersC.ResetPassword)
+	r.Post("/reset-pw", usersC.ProcessResetPassword)
 	r.Route("/users/me", func(r chi.Router) {
 		// 使用中间件
 		r.Use(umw.RequireUser)
@@ -93,6 +168,9 @@ func main() {
 	})
 
 	// 启动服务
-	fmt.Println("starting the server on :3000....")
-	http.ListenAndServe(":3000", r)
+	fmt.Printf("starting the server on %s...\n", cfg.Server.Address)
+	err = http.ListenAndServe(cfg.Server.Address, r)
+	if err != nil {
+		panic(err)
+	}
 }

@@ -79,9 +79,9 @@ func (us *UserService) UpdatePassword(userID int, password string) error {
 		UPDATE users
 		SET
 		password_hash = $2
-		WHERE  id = $1`, passwordHash, userID)
+		WHERE  id = $1`, userID, passwordHash)
 	if err != nil {
-		return fmt.Errorf("update passwrod : %w", err)
+		return fmt.Errorf("update password : %w", err)
 	}
 	return nil
 }

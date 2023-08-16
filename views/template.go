@@ -34,6 +34,13 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 			"currentUser": func() (template.HTML, error) {
 				return "", fmt.Errorf("功能还未完成")
 			},
+			"errors": func() []string {
+				return []string{
+					"Don't do that!",
+					"The email is used",
+					"something wrong",
+				}
+			},
 		})
 	// 解析文件系统中的模板文件，并将其解析到tpl模板中。
 	tpl, err := tpl.ParseFS(fs, patterns...)

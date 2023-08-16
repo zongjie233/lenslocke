@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	_ "github.com/go-chi/chi/v5"
+
 	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
 	"github.com/zongjie233/lenslocked/migrations"

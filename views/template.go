@@ -2,6 +2,7 @@ package views
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/gorilla/csrf"
 	"github.com/zongjie233/lenslocked/context"
@@ -13,6 +14,10 @@ import (
 	"log"
 	"net/http"
 )
+
+type public interface {
+	Public() string
+}
 
 // Must 简化使用模板时的错误处理。如果在解析或执行模板时发生错误，程序将死机并停止执行。
 func Must(t Template, err error) Template {
@@ -58,13 +63,14 @@ type Template struct {
 	htmlTpl *template.Template
 }
 
-func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}) {
+func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}, errs ...error) {
 	tpl, err := t.htmlTpl.Clone()
 	if err != nil {
 		log.Printf("cloning template: %v", err)
 		http.Error(w, "there was an error rendering the page", http.StatusInternalServerError)
 		return
 	}
+	errMsgs := errMessages(errs...)
 	// 为模板添加一个自定义函数。
 	// 注释：这个函数为模板提供一个名为 "csrfField" 的自定义函数，返回从请求中获取的CSRF令牌。
 	tpl = tpl.Funcs(
@@ -74,6 +80,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 			},
 			"currentUser": func() *models.User {
 				return context.User(r.Context())
+			},
+			"errors": func() []string {
+				return errMsgs
 			},
 		},
 	)
@@ -99,3 +108,17 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 //		htmlTpl: tpl,
 //	}, nil
 //}
+
+func errMessages(errs ...error) []string {
+	var msgs []string
+	for _, err := range errs {
+		var pubErr public
+		if errors.As(err, &pubErr) {
+			msgs = append(msgs, pubErr.Public())
+		} else {
+			println(err)
+			msgs = append(msgs, "something wrong")
+		}
+	}
+	return msgs
+}

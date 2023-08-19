@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"github.com/zongjie233/lenslocked/context"
+	"github.com/zongjie233/lenslocked/errors"
 	"github.com/zongjie233/lenslocked/models"
 	"net/http"
 	"net/url"
@@ -32,28 +33,43 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
+	// Create a struct to store the data
 	var data struct {
 		Email    string
 		Password string
 	}
 
+	// Get the values from the form
 	data.Email = r.FormValue("email")
 	data.Password = r.FormValue("password")
+	// Create a user using the data
 	user, err := u.UserService.Create(data.Email, data.Password)
 	if err != nil {
+		// Print an error if the user already exists
+		fmt.Println("create错误")
+		if errors.Is(err, models.ErrEmailTaken) {
+			err = errors.Public(err, "Email already taken")
+		}
+		// Execute the template with the data and error
 		u.Templates.New.Execute(w, r, data, err)
 		return
 	}
 
+	// Create a session using the user ID
 	session, err := u.SessionService.Create(user.ID)
 	if err != nil {
+		// Print an error if the session could not be created
 		fmt.Println(err)
+		// Redirect to the signin page
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
 
+	// Set the cookie with the session token
 	setCookie(w, CookieSession, session.Token)
+	// Redirect to the user's profile page
 	http.Redirect(w, r, "/users/me", http.StatusFound)
+	// Print the user's information
 	fmt.Fprintf(w, "User created:%v", user)
 }
 

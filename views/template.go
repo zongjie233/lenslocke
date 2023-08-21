@@ -10,9 +10,9 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
-
 	"log"
 	"net/http"
+	"path"
 )
 
 type public interface {
@@ -27,10 +27,13 @@ func Must(t Template, err error) Template {
 	return t
 }
 
-// ParseFS 返回一个 Template 包含已解析模板的结构
+// ParseFS takes a filesystem and a list of patterns and returns a Template and an error
 func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
-	// 必须在解析模版之前声明
-	tpl := template.New(patterns[0])
+
+	// Create a new template with the first pattern as the name
+	// path.Base()返回路径中最后一个部分,即最后一个"/"的后边内容
+	tpl := template.New(path.Base(patterns[0]))
+	// Set the template functions
 	tpl = tpl.Funcs(
 		template.FuncMap{
 			"csrfField": func() (template.HTML, error) {
@@ -47,12 +50,14 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 				}
 			},
 		})
-	// 解析文件系统中的模板文件，并将其解析到tpl模板中。
+
+	// Parse the template with the given filesystem and patterns
 	tpl, err := tpl.ParseFS(fs, patterns...)
 	if err != nil {
 		return Template{}, fmt.Errorf("parsfs template: %v", err)
 	}
 
+	// Return the Template and no error
 	return Template{
 		htmlTpl: tpl,
 	}, nil

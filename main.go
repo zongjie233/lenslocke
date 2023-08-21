@@ -93,8 +93,13 @@ func main() {
 		DB: db,
 	}
 
+	galleryService := &models.GalleryService{
+		DB: db,
+	}
+
 	emailService := models.NewEmailService(cfg.SMTP)
 
+	// 设置路由
 	// 设置中间件
 	umw := controllers.UserMiddleware{
 		SessionService: sessionService,
@@ -102,6 +107,7 @@ func main() {
 
 	csrfMw := csrf.Protect(
 		[]byte(cfg.CSRF.Key),
+		csrf.Path("/"),
 		csrf.Secure(cfg.CSRF.Secure),
 	)
 
@@ -134,6 +140,15 @@ func main() {
 		"reset-pw.gohtml", "tailwind.gohtml",
 	))
 
+	galleriesC := controllers.Galleries{
+		GalleryService: galleryService,
+	}
+
+	galleriesC.Templates.New = views.Must(views.ParseFS(
+		templates.FS,
+		"galleries/new.gohtml", "tailwind.gohtml",
+	))
+
 	// 设置路由器和路由
 	r := chi.NewRouter()
 	r.Use(csrfMw)
@@ -163,6 +178,16 @@ func main() {
 		r.Use(umw.RequireUser)
 
 		r.Get("/", usersC.CurrentUser)
+	})
+
+	r.Route("/galleries", func(r chi.Router) {
+		// Register the group of routes
+		r.Group(func(r chi.Router) {
+			// Require the user to be logged in
+			r.Use(umw.RequireUser)
+			// Register the route for the new gallery
+			r.Get("/new", galleriesC.New)
+		})
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

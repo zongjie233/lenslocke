@@ -69,7 +69,7 @@ func (gs *GalleryService) ByID(id int) (*Gallery, error) {
 	return &gallery, nil
 }
 
-// Get a Gallery by UserID
+// ByUserID Get a Gallery by UserID 为了避免不必要的复制和更好地处理数据，返回指针类型的切片是更好的选择。
 func (gs *GalleryService) ByUserID(userID int) ([]*Gallery, error) {
 	rows, err := gs.DB.Query(`
 		SELECT
@@ -98,6 +98,31 @@ func (gs *GalleryService) ByUserID(userID int) ([]*Gallery, error) {
 }
 
 // Update a Gallery
-//func (gs *GalleryService) Update(gallery *Gallery) error {
-//	// Query the Gallery from the database
-//}
+func (gs *GalleryService) Update(gallery *Gallery) error {
+	// Update the Gallery in the database
+	_, err := gs.DB.Exec(`
+		UPDATE
+			galleries
+		SET
+			title = $2
+		WHERE
+			id = $1;`, gallery.ID, gallery.Title)
+	if err != nil {
+		return fmt.Errorf("update gallery: %w", err)
+	}
+	return nil
+}
+
+// Delete a Gallery
+func (gs *GalleryService) Delete(id int) error {
+	// Delete the Gallery in the database
+	_, err := gs.DB.Exec(`
+		DELETE FROM
+			galleries
+		WHERE
+			id = $1;`, id)
+	if err != nil {
+		return fmt.Errorf("delete gallery: %w", err)
+	}
+	return nil
+}

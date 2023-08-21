@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	_ "github.com/go-chi/chi/v5"
 
 	"github.com/gorilla/csrf"
 	"github.com/joho/godotenv"
@@ -80,7 +81,7 @@ func main() {
 		panic(err)
 	}
 
-	// 设置服务项
+	// 设置服务项 d
 	userService := &models.UserService{
 		DB: db,
 	}
@@ -149,6 +150,11 @@ func main() {
 		"galleries/new.gohtml", "tailwind.gohtml",
 	))
 
+	galleriesC.Templates.Edit = views.Must(views.ParseFS(
+		templates.FS,
+		"galleries/edit.gohtml", "tailwind.gohtml",
+	))
+
 	// 设置路由器和路由
 	r := chi.NewRouter()
 	r.Use(csrfMw)
@@ -187,6 +193,10 @@ func main() {
 			r.Use(umw.RequireUser)
 			// Register the route for the new gallery
 			r.Get("/new", galleriesC.New)
+			r.Post("/", galleriesC.Create)
+			r.Get("/{id}/edit", galleriesC.Edit)
+			r.Post("/{id}", galleriesC.Update)
+
 		})
 	})
 

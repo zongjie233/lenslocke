@@ -4,16 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	_ "github.com/go-chi/chi/v5"
 	"github.com/zongjie233/lenslocked/context"
 	"github.com/zongjie233/lenslocked/models"
+	"math/rand"
 	"net/http"
 	"strconv"
 )
 
 type Galleries struct {
 	Templates struct {
-		New  Template
-		Edit Template
+		New   Template
+		Show  Template
+		Edit  Template
+		Index Template
 	}
 	GalleryService *models.GalleryService
 }
@@ -42,6 +46,36 @@ func (g *Galleries) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
 	http.Redirect(w, r, editPath, http.StatusFound)
+}
+
+// show galleries by id
+func (g *Galleries) Show(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid ID", http.StatusNotFound)
+		return
+	}
+	gallery, err := g.GalleryService.ByID(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			http.Error(w, "Gallery not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "something went wrong", http.StatusInternalServerError)
+	}
+	var data struct {
+		ID     int
+		Title  string
+		Images []string
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	for i := 0; i < 20; i++ {
+		w, h := rand.Intn(500)+200, rand.Intn(500)+200
+		catImageURL := fmt.Sprintf("https://placekitten.com/%d/%d", w, h)
+		data.Images = append(data.Images, catImageURL)
+	}
+	g.Templates.Show.Execute(w, r, data)
 }
 
 // edit galleries
@@ -106,4 +140,36 @@ func (g *Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
 	http.Redirect(w, r, editPath, http.StatusFound)
 
+}
+
+func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
+	// Create a type to store the gallery information
+	type Gallery struct {
+		ID    int
+		Title string
+	}
+
+	// Create a struct to store the gallery information
+	var data struct {
+		Galleries []Gallery
+	}
+	// Get the user from the request context
+	user := context.User(r.Context())
+	// Get the gallery information from the gallery service
+	galleries, err := g.GalleryService.ByUserID(user.ID)
+	// If there is an error, return an internal server error
+	if err != nil {
+		http.Error(w, "something wrong", http.StatusInternalServerError)
+		return
+	}
+	// Loop through the gallery information and append it to the data struct
+	for _, g := range galleries {
+		data.Galleries = append(data.Galleries, Gallery{
+			ID:    g.ID,
+			Title: g.Title,
+		})
+	}
+
+	// Execute the index template with the data struct
+	g.Templates.Index.Execute(w, r, data)
 }

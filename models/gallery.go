@@ -41,6 +41,7 @@ func (gs *GalleryService) Create(title string, userID int) (*Gallery, error) {
 	return &gallery, nil
 }
 
+// do some changes
 // Get a Gallery by ID
 func (gs *GalleryService) ByID(id int) (*Gallery, error) {
 	// Create a new Gallery

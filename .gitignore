@@ -2,7 +2,7 @@
 *.exe
 *.dll
 *.pdb
-
+.idea/
 # Images directory during development
 images/
 

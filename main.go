@@ -198,7 +198,7 @@ func main() {
 
 	r.Route("/galleries", func(r chi.Router) {
 		r.Get("/{id}", galleriesC.Show)
-
+		r.Get("/{id}/images/{filename}", galleriesC.Image)
 		// Register the group of routes
 		r.Group(func(r chi.Router) {
 			// Require the user to be logged in

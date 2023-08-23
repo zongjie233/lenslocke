@@ -4,7 +4,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 )
+
+type Image struct {
+	Path      string
+	GalleryID int
+	Filename  string
+}
 
 type Gallery struct {
 	ID     int
@@ -13,7 +21,8 @@ type Gallery struct {
 }
 
 type GalleryService struct {
-	DB *sql.DB
+	DB        *sql.DB
+	ImagesDir string
 }
 
 // Create a new Gallery with the given title and userID
@@ -126,4 +135,54 @@ func (gs *GalleryService) Delete(id int) error {
 		return fmt.Errorf("delete gallery: %w", err)
 	}
 	return nil
+}
+
+func (gs *GalleryService) Images(galleryID int) ([]Image, error) {
+	globPattern := filepath.Join(gs.galleryDir(galleryID), "*")
+	allFiles, err := filepath.Glob(globPattern)
+	if err != nil {
+		return nil, fmt.Errorf("retrieving gallery images : %w", err)
+	}
+
+	var images []Image
+	for _, file := range allFiles {
+		if hasExtension(file, gs.extensions()) {
+			images = append(images, Image{
+				Path:      file,
+				Filename:  filepath.Base(file),
+				GalleryID: galleryID,
+			})
+		}
+	}
+	return images, nil
+}
+
+func (gs *GalleryService) extensions() []string {
+	return []string{".png", ".jpg", ".jpeg", ".gif"}
+}
+
+func hasExtension(file string, extensions []string) bool {
+	// Loop through each extension in the array
+	for _, ext := range extensions {
+		// Convert the file string to lowercase
+		file = strings.ToLower(file)
+		// Convert the extension string to lowercase
+		ext = strings.ToLower(ext)
+		// Check if the file extension matches the extension
+		if filepath.Ext(file) == ext {
+			// If it does, return true
+			return true
+		}
+	}
+	// If the file extension does not match any of the extensions, return false
+	return false
+}
+
+// galleryDir
+func (gs *GalleryService) galleryDir(id int) string {
+	imagesDir := gs.ImagesDir
+	if imagesDir == "" {
+		imagesDir = "images"
+	}
+	return filepath.Join(imagesDir, fmt.Sprintf("gallery-%d", id))
 }

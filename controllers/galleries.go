@@ -8,7 +8,6 @@ import (
 
 	"github.com/zongjie233/lenslocked/context"
 	"github.com/zongjie233/lenslocked/models"
-	"math/rand"
 	"net/http"
 	"strconv"
 )
@@ -55,17 +54,26 @@ func (g *Galleries) Show(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	type Image struct {
+		Filename  string
+		GalleryID int
+	}
+
 	var data struct {
 		ID     int
 		Title  string
-		Images []string
+		Images []Image
 	}
 	data.ID = gallery.ID
 	data.Title = gallery.Title
-	for i := 0; i < 20; i++ {
-		w, h := rand.Intn(500)+200, rand.Intn(500)+200
-		catImageURL := fmt.Sprintf("https://placekitten.com/%d/%d", w, h)
-		data.Images = append(data.Images, catImageURL)
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "something wrong", http.StatusInternalServerError)
+		return
+	}
+	for _, image := range images {
+		data.Images = append(data.Images, Image{Filename: image.Filename, GalleryID: image.GalleryID})
 	}
 	g.Templates.Show.Execute(w, r, data)
 }
@@ -148,6 +156,51 @@ func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/galleries", http.StatusFound)
+}
+
+// Image
+func (g *Galleries) Image(w http.ResponseWriter, r *http.Request) {
+	// Get the filename from the request
+	filename := chi.URLParam(r, "filename")
+	// Get the galleryID from the request
+	galleryID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		// Return an error if the ID is not valid
+		http.Error(w, "invalid id", http.StatusNotFound)
+		return
+	}
+
+	// Get the images from the gallery service
+	images, err := g.GalleryService.Images(galleryID)
+	if err != nil {
+		// Print an error if the service fails
+		fmt.Println(err)
+		http.Error(w, "something wrong", http.StatusInternalServerError)
+		return
+	}
+
+	// Set a boolean to indicate if the image was found
+	var requestedImage models.Image
+	imageFound := false
+	// Loop through the images
+	for _, image := range images {
+		// Check if the filename matches the one we are looking for
+		if image.Filename == filename {
+			// Set the requested image to the one we are looking for
+			requestedImage = image
+			// Set the boolean to true to indicate that the image was found
+			imageFound = true
+			break
+		}
+	}
+	// Return an error if the image was not found
+	if !imageFound {
+		http.Error(w, "image not found", http.StatusNotFound)
+		return
+	}
+	// Serve the file from the requested image
+	http.ServeFile(w, r, requestedImage.Path)
+
 }
 
 type galleryOpt func(w http.ResponseWriter, r *http.Request, gallery *models.Gallery) error

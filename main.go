@@ -155,6 +155,16 @@ func main() {
 		"galleries/edit.gohtml", "tailwind.gohtml",
 	))
 
+	galleriesC.Templates.Index = views.Must(views.ParseFS(
+		templates.FS,
+		"galleries/index.gohtml", "tailwind.gohtml",
+	))
+
+	galleriesC.Templates.Show = views.Must(views.ParseFS(
+		templates.FS,
+		"galleries/show.gohtml", "tailwind.gohtml",
+	))
+
 	// 设置路由器和路由
 	r := chi.NewRouter()
 	r.Use(csrfMw)
@@ -187,16 +197,19 @@ func main() {
 	})
 
 	r.Route("/galleries", func(r chi.Router) {
+		r.Get("/{id}", galleriesC.Show)
+
 		// Register the group of routes
 		r.Group(func(r chi.Router) {
 			// Require the user to be logged in
 			r.Use(umw.RequireUser)
+			r.Get("/", galleriesC.Index)
 			// Register the route for the new gallery
 			r.Get("/new", galleriesC.New)
 			r.Post("/", galleriesC.Create)
 			r.Get("/{id}/edit", galleriesC.Edit)
 			r.Post("/{id}", galleriesC.Update)
-
+			r.Post("/{id}/delete", galleriesC.Delete)
 		})
 	})
 

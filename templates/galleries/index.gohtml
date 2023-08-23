@@ -1,0 +1,50 @@
+{{template  "header" .}}
+<div class="p-8 w-full">
+    <h1 class="pt-4 pb-8 text-3xl font-bold text-gray-800">My Galleries</h1>
+    <table class="table-fixed w-full">
+        <thead>
+            <tr>
+                <th class="p-2 w-24 text-left">ID</th>
+                <th class="p-2 text-left">Title</th>
+                <th class="p-2 text-left w-96">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Galleries}}
+            <tr class="border">
+                <td class="p-2 border">{{.ID}}</td>
+                <td class="p-2 border">{{.Title}}</td>
+                <td class="p-2 border flex space-x-2">
+                    <a href="/galleries/{{.ID}}">
+                        <button class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded">
+                            View
+                        </button>
+                    </a>
+                    <a href="/galleries/{{.ID}}/edit">
+                        <button class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded">
+                            Edit
+                        </button>
+                    </a>
+                    <form
+                        action="/galleries/{{.ID}}/delete"
+                        method="post"
+                        onsubmit="return confirm('Do you really want to delete this gallery?');"
+                    >
+                        {{csrfField}}
+                    <a href="#">
+                        <button class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded">
+                            Delete
+                        </button>
+                    </a>
+                    </form>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+<div class="py-4">
+    <a href="/galleries/new" class="py-2 px-8 bg-blue-700 hover:bg-blue-800 text-white rounded font-bold text-lg">New Gallery</a>
+</div>
+
+</div>
+{{template "footer" .}}

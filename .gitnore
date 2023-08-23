@@ -1,2 +1,8 @@
 .env
 *.exe
+*.dll
+*.pdb
+
+# Images directory during development
+images/
+

@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"path"
 )
 
@@ -49,6 +50,7 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 					"something wrong",
 				}
 			},
+			"pathEscape": url.PathEscape,
 		})
 
 	// Parse the template with the given filesystem and patterns

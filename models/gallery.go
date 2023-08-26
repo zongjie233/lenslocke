@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -156,6 +158,39 @@ func (gs *GalleryService) Images(galleryID int) ([]Image, error) {
 	}
 	return images, nil
 }
+
+// search one image
+func (gs *GalleryService) Image(galleryID int, filename string) (Image, error) {
+	imagePath := filepath.Join(gs.galleryDir(galleryID), filename)
+	// 检查文件是否存在
+	_, err := os.Stat(imagePath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return Image{}, ErrNotFound
+		}
+		return Image{}, fmt.Errorf("querying for image : %w", err)
+	}
+	return Image{
+		Filename:  filename,
+		GalleryID: galleryID,
+		Path:      imagePath,
+	}, nil
+}
+
+func (gs *GalleryService) DeleteImage(galleryID int, filename string) error {
+	// Get the images from the gallery service
+	image, err := gs.Image(galleryID, filename)
+	if err != nil {
+		return fmt.Errorf("deleting image: %w", err)
+	}
+	err = os.Remove(image.Path)
+	if err != nil {
+		return fmt.Errorf("deleting image: %w", err)
+	}
+	return nil
+}
+
+// search all images
 
 func (gs *GalleryService) extensions() []string {
 	return []string{".png", ".jpg", ".jpeg", ".gif"}

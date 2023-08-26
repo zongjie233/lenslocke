@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	_ "github.com/go-chi/chi/v5"
-
 	"github.com/zongjie233/lenslocked/context"
 	"github.com/zongjie233/lenslocked/models"
 	"net/http"
+	"net/url"
+	"path/filepath"
 	"strconv"
 )
 
@@ -55,8 +56,9 @@ func (g *Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type Image struct {
-		Filename  string
-		GalleryID int
+		Filename        string
+		GalleryID       int
+		FilenameEscaped string
 	}
 
 	var data struct {
@@ -73,7 +75,11 @@ func (g *Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, image := range images {
-		data.Images = append(data.Images, Image{Filename: image.Filename, GalleryID: image.GalleryID})
+		data.Images = append(data.Images, Image{
+			Filename:        image.Filename,
+			GalleryID:       image.GalleryID,
+			FilenameEscaped: url.PathEscape(image.Filename),
+		})
 	}
 	g.Templates.Show.Execute(w, r, data)
 }
@@ -84,13 +90,34 @@ func (g *Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	data := struct {
-		ID    int
-		Title string
-	}{
-		ID:    gallery.ID,
-		Title: gallery.Title,
+
+	type Image struct {
+		Filename        string
+		GalleryID       int
+		FilenameEscaped string
 	}
+	var data struct {
+		ID     int
+		Title  string
+		Images []Image
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "something wrong", http.StatusInternalServerError)
+		return
+	}
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			Filename:        image.Filename,
+			GalleryID:       image.GalleryID,
+			FilenameEscaped: url.PathEscape(image.Filename),
+		})
+	}
+
 	g.Templates.Edit.Execute(w, r, data)
 
 }
@@ -161,7 +188,8 @@ func (g *Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 // Image
 func (g *Galleries) Image(w http.ResponseWriter, r *http.Request) {
 	// Get the filename from the request
-	filename := chi.URLParam(r, "filename")
+	filename := g.filename(w, r)
+
 	// Get the galleryID from the request
 	galleryID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -171,35 +199,33 @@ func (g *Galleries) Image(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the images from the gallery service
-	images, err := g.GalleryService.Images(galleryID)
+	image, err := g.GalleryService.Image(galleryID, filename)
 	if err != nil {
-		// Print an error if the service fails
+		if errors.Is(err, models.ErrNotFound) {
+			http.Error(w, "image not found", http.StatusNotFound)
+			return
+		}
 		fmt.Println(err)
 		http.Error(w, "something wrong", http.StatusInternalServerError)
 		return
 	}
+	http.ServeFile(w, r, image.Path)
+}
 
-	// Set a boolean to indicate if the image was found
-	var requestedImage models.Image
-	imageFound := false
-	// Loop through the images
-	for _, image := range images {
-		// Check if the filename matches the one we are looking for
-		if image.Filename == filename {
-			// Set the requested image to the one we are looking for
-			requestedImage = image
-			// Set the boolean to true to indicate that the image was found
-			imageFound = true
-			break
-		}
-	}
-	// Return an error if the image was not found
-	if !imageFound {
-		http.Error(w, "image not found", http.StatusNotFound)
+func (g *Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {
+	// Get the filename from the request
+	filename := g.filename(w, r)
+	gallery, err := g.galleryByID(w, r, userMustOwnGallery)
+	if err != nil {
 		return
 	}
-	// Serve the file from the requested image
-	http.ServeFile(w, r, requestedImage.Path)
+	err = g.GalleryService.DeleteImage(gallery.ID, filename)
+	if err != nil {
+		http.Error(w, "something wrong", http.StatusInternalServerError)
+		return
+	}
+	editpath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
+	http.Redirect(w, r, editpath, http.StatusFound)
 
 }
 
@@ -235,6 +261,13 @@ func (g *Galleries) galleryByID(w http.ResponseWriter, r *http.Request, opts ...
 	}
 	// Return the gallery and any errors
 	return gallery, nil
+}
+
+// filename 确保文件名是合法的,防止程序被恶意篡改
+func (g *Galleries) filename(w http.ResponseWriter, r *http.Request) string {
+	filename := chi.URLParam(r, "filename")
+	filename = filepath.Base(filename)
+	return filename
 }
 
 // userMustOwnGallery

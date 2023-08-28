@@ -6,3 +6,4 @@
 # Images directory during development
 images/
 
+node_modules/

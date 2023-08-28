@@ -77,7 +77,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	err = run(cfg)
+	if err != nil {
+		panic(err)
+	}
+}
 
+func run(cfg config) error {
 	// 设置数据库
 	db, err := models.Open(cfg.PSQL)
 	if err != nil {
@@ -89,7 +95,7 @@ func main() {
 	// 执行迁移
 	err = models.MigrateFS(db, migrations.FS, ".")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// 设置服务项 d
@@ -200,12 +206,12 @@ func main() {
 	r.Post("/forgot-pw", usersC.ProcessForgotPassword)
 	r.Get("/reset-pw", usersC.ResetPassword)
 	r.Post("/reset-pw", usersC.ProcessResetPassword)
-	r.Route("/users/me", func(r chi.Router) {
-		// 使用中间件
-		r.Use(umw.RequireUser)
-
-		r.Get("/", usersC.CurrentUser)
-	})
+	//r.Route("/users/me", func(r chi.Router) {
+	//	// 使用中间件
+	//	r.Use(umw.RequireUser)
+	//
+	//	r.Get("/", usersC.CurrentUser)
+	//})
 
 	r.Route("/galleries", func(r chi.Router) {
 		r.Get("/{id}", galleriesC.Show)
@@ -226,14 +232,13 @@ func main() {
 		})
 	})
 
+	assetsHandler := http.FileServer(http.Dir("./assets"))
+	r.Get("/assets/*", http.StripPrefix("/assets", assetsHandler).ServeHTTP)
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "page not found", http.StatusNotFound)
 	})
 
 	// 启动服务
 	fmt.Printf("starting the server on %s...\n", cfg.Server.Address)
-	err = http.ListenAndServe(cfg.Server.Address, r)
-	if err != nil {
-		panic(err)
-	}
+	return http.ListenAndServe(cfg.Server.Address, r)
 }

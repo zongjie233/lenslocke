@@ -4,7 +4,7 @@ services:
 
   db:
     image: postgres
-    restart: always #
+    restart: always
     environment:
       POSTGRES_USER: ${PSQL_USER}
       POSTGRES_PASSWORD: ${PSQL_PASSWORD}

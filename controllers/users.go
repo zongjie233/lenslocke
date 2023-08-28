@@ -68,7 +68,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	// Set the cookie with the session token
 	setCookie(w, CookieSession, session.Token)
 	// Redirect to the user's profile page
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 	// Print the user's information
 	fmt.Fprintf(w, "User created:%v", user)
 }
@@ -102,7 +102,7 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 
 }
 

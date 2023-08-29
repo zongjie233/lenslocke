@@ -1,19 +1,26 @@
 {{template "header" .}}
-<div class="px-6">
 
-<h1 class="py-4 text-4xl semibold tracking-tight">FAQ page</h1>
-<ul class="grid grid-cols-2 gap-16">
-    {{range .}}
-        {{template "qa" .}}
-    {{end}}
-</ul>
+<div class="container mx-auto px-4 py-8 opacity-80">
+    <h1 class="text-3xl font-semibold mb-4">Frequently Asked Questions</h1>
+
+    <div class="space-y-6">
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-2">How can I create a new account?</h2>
+            <p>To create a new account, visit the "Sign Up" page and fill in the required information.</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-2">Can I upload my own photos?</h2>
+            <p>Yes, you can upload your own photos and create your own galleries.</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-2">What payment methods are accepted?</h2>
+            <p>We currently accept credit card payments and PayPal.</p>
+        </div>
+        <!-- Add more FAQ items as needed -->
+    </div>
 </div>
+
 {{template "footer" .}}
 
 
-{{define "qa"}}
-<li class="border-t border-indigo-400 py-1 px-2">
-<b>{{.Question}}</b> 
-{{.Answer}}</li>
-{{end}}
 

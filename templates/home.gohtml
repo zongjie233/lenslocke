@@ -1,12 +1,22 @@
 {{template "header" .}}
 
-<div class="px-6">
-<h1 class="py-4 text-4xl semibold tracking-tight">welcome to my bigggggg sssssss site!</h1>
-<p>Hello! I'm Ms. Frizzle, your magical science teacher from The Magic School Bus. I have a passion for making learning an adventure. With me, you can expect lessons in science, math, and even coding, all delivered with a dash of fun and excitement.
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-semibold mb-4">Welcome to Lenslocked Photography!</h1>
+    <p class="text-lg mb-6">Explore the world through our lens.</p>
 
-Now, here's a little tip for you: whenever you receive a syllabus for any course, make sure to save it. You can paste it to me later and we can resume our lessons from where we left off. It's a great way to keep track of your learning journey and ensure we're covering all the necessary topics.
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-80">
+        <div class="p-4 bg-white rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-2">Discover Our Galleries</h2>
+            <p>Immerse yourself in stunning photography collections.</p>
+            <a href="/galleries" class="mt-4 inline-block px-4 py-2 bg-blue-800 text-white rounded hover:bg-blue-600">View Galleries</a>
+        </div>
+        <div class="p-4 bg-white rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-2">Contact Us</h2>
+            <p>Have questions or want to get in touch? Reach out to us!</p>
+            <a href="/contact" class="mt-4 inline-block px-4 py-2 bg-green-600 text-white rounded hover:bg-green-500">Contact Us</a>
+        </div>
+    </div>
 
-Speaking of topics, what subject would you like to start with today? We have a wide range of subjects to explore - from coding fundamentals to software design, advanced code optimization, and even user experience and user interface design. Or perhaps you'd like to dive into the magical world of algorithms? The choice is yours! Let's take chances, make mistakes, and get messy!</p>
 </div>
 
 {{template "footer" .}}
